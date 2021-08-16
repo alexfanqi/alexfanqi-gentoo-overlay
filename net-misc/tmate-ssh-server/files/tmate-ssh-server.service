@@ -1,0 +1,13 @@
+[Unit]
+Description=Tmate-ssh-server: server for tmate, an Instant Terminal Sharing tool 
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Restart=always
+ExecStart=/usr/bin/tmate-ssh-server -b TMATE_SERVER_IP -h $TMATE_SERVER_HOSTNAME -k $TMATE_SERVER_KEYDIR -p $TMATE_SERVER_PORT
+
+[Install]
+WantedBy=multi-user.target

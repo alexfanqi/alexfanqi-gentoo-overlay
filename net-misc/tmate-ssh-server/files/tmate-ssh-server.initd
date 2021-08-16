@@ -1,0 +1,15 @@
+#!/sbin/openrc-run
+# Copyright 2021 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+name="tmate-ssh-server daemon"
+description="Tmate-ssh-server: server for tmate, an Instant Terminal Sharing tool"
+command=/usr/bin/tmate-ssh-server
+command_args="${tmate-ssh-server_args}"
+command_background="true"
+
+depend() {
+	need net
+}
+
+export TMPDIR="${TMPDIR:-/tmp}"
