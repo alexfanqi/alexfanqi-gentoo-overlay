@@ -10,14 +10,8 @@ HOMEPAGE="https://github.com/tmate-io/tmate-ssh-server"
 LICENSE="MIT"
 SLOT="0"
 
-if [[ ${PV} == "9999" ]]; then
-	KEYWORDS=""
-	EGIT_REPO_URI="https://github.com/tmate-io/tmate-ssh-server"
-	inherit git-r3
-else
-	KEYWORDS="~amd64 ~x86 ~riscv"
-	SRC_URI="https://github.com/tmate-io/tmate-ssh-server/archive/refs/tags/${PV}.tar.gz -> ${P}.tar.gz"
-fi
+KEYWORDS="~amd64 ~riscv ~x86 "
+SRC_URI="https://github.com/tmate-io/tmate-ssh-server/archive/refs/tags/${PV}.tar.gz -> ${P}.tar.gz"
 
 IUSE="debug static"
 
@@ -27,6 +21,7 @@ DEPEND="
 	sys-libs/ncurses
 	dev-libs/libevent
 	>=dev-libs/msgpack-1.2.0
+	sys-libs/libutempter
 	"
 
 RDEPEND="
@@ -58,26 +53,26 @@ src_install(){
 	systemd_install_serviced "${FILESDIR}/tmate-ssh-server.service.conf"
 }
 
-pkg_preinst() {
-	local KEY_DIR="etc/tmate-ssh-server"
-	if [[ -z "$(ls -A "${EROOT}/${KEY_DIR}" 2> /dev/null)" ]] ; then
-		ewarn "The server key directory, ${EROOT}/${KEY_DIR} is not empty"
-		ewarn 'No key will be generated'
-		einfo "If you want to generate a key later,"
-		einfo "run ${EROOT}/usr/bin/ssh-keygen -t rsa -f ${EROOT}/${KEY_DIR}/ssh_host_rsa_key"
-		einfo "and ${EROOT}/usr/bin/ssh-keygen -t ed25519 -f ${EROOT}/${KEY_DIR}/ssh_host_ed25519_key"
-	else
-		mkdir -p "${ED}/${KEY_DIR}"/ssh_host_rsa_key || die
-		elog "Generating ssh key for tmate server in ${EROOT}/${KEY_DIR}"
-		for keytype in rsa ed25519; do
-			"${EROOT}"/usr/bin/ssh-keygen -t $keytype -f "${ED}/${KEY_DIR}"/ssh_host_${keytype}_key -N ''
-		done
-	fi
-}
-
 pkg_postinst() {
+	local KEY_DIR="etc/tmate-ssh-server"
 	einfo "You need to modify certain variables for systemd or OpenRC services to work"
 	einfo "See ${EROOT}/etc/conf.d/tmate-ssh-server.confd for OpenRC users"
 	einfo "See ${EROOT}/etc/systemd/system/tmate-ssh-server.service.d/ for systemd users"
+	einfo "If you want to generate a server ssh key, use emerge --config, or alternatively,"
+	einfo "run ${EROOT}/usr/bin/ssh-keygen -t rsa -f ${EROOT}/${KEY_DIR}/ssh_host_rsa_key"
+	einfo "and ${EROOT}/usr/bin/ssh-keygen -t ed25519 -f ${EROOT}/${KEY_DIR}/ssh_host_ed25519_key"
 }
 
+pkg_config() {
+	local KEY_DIR="etc/tmate-ssh-server"
+	if [[ -n "$(ls -A ${EROOT}/${KEY_DIR} 2> /dev/null)" ]] ; then
+		einfo "The server key directory, ${EROOT}/${KEY_DIR} is not empty"
+		einfo 'No key will be generated'
+	else
+		mkdir -p "${EROOT}/${KEY_DIR}"/ || die
+		elog "Generating ssh key for tmate server in ${EROOT}/${KEY_DIR}"
+		for keytype in rsa ed25519; do
+			"${EROOT}"/usr/bin/ssh-keygen -t $keytype -f "${EROOT}/${KEY_DIR}"/ssh_host_${keytype}_key -N ''
+		done
+	fi
+}
