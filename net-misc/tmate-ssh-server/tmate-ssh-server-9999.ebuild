@@ -15,8 +15,8 @@ if [[ ${PV} == "9999" ]]; then
 	EGIT_REPO_URI="https://github.com/tmate-io/tmate-ssh-server"
 	inherit git-r3
 else
-	KEYWORDS="~amd64 ~riscv"
-	SRC_URI="https://github.com/tmate-io/tmate-ssh-server/archive/refs/tags/${PV}.tar.gz"
+	KEYWORDS="~amd64 ~x86 ~riscv"
+	SRC_URI="https://github.com/tmate-io/tmate-ssh-server/archive/refs/tags/${PV}.tar.gz -> ${P}.tar.gz"
 fi
 
 IUSE="debug static"
@@ -68,7 +68,7 @@ pkg_preinst() {
 		einfo "and ${EROOT}/usr/bin/ssh-keygen -t ed25519 -f ${EROOT}/${KEY_DIR}/ssh_host_ed25519_key"
 	else
 		mkdir -p "${ED}/${KEY_DIR}"/ssh_host_rsa_key || die
-		einfo "Generating ssh key for tmate server in ${EROOT}/${KEY_DIR}"
+		elog "Generating ssh key for tmate server in ${EROOT}/${KEY_DIR}"
 		for keytype in rsa ed25519; do
 			"${EROOT}"/usr/bin/ssh-keygen -t $keytype -f "${ED}/${KEY_DIR}"/ssh_host_${keytype}_key -N ''
 		done
