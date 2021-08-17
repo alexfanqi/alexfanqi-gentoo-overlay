@@ -1,5 +1,5 @@
 [Unit]
-Description=Tmate-ssh-server: server for tmate, an Instant Terminal Sharing tool 
+Description=Tmate-ssh-server: server for tmate, an instant terminal sharing tool 
 After=network.target
 Wants=network.target
 

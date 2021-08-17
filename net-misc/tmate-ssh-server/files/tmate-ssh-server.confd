@@ -1,4 +1,4 @@
 # tmate-ssh-server -b TMATE_SERVER_IP -h TMATE_SERVER_HOSTNAME -k TMATE_SERVER_KEYDIR -p TMATE_SERVER_PORT
-# tmate-ssh-server -h server.exmple.com -k /etc/tmate-ssh-server/keys/ -p 5022
+# tmate-ssh-server -h server.example.com -k /etc/tmate-ssh-server/keys/ -p 5022
 
 tmate-ssh-server_args="-b TMATE_SERVER_IP -h $TMATE_SERVER_HOSTNAME -k $TMATE_SERVER_KEYDIR -p $TMATE_SERVER_PORT"

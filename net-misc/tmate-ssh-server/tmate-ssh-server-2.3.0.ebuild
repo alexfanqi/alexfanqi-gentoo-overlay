@@ -70,7 +70,7 @@ pkg_preinst() {
 		mkdir -p "${ED}/${KEY_DIR}"/ssh_host_rsa_key || die
 		einfo "Generating ssh key for tmate server in ${EROOT}/${KEY_DIR}"
 		for keytype in rsa ed25519; do
-			"${EROOT}"/usr/bin/ssh-keygen -t $keytype -f "${ED}/${KEY_DIR}"/ssh_host_${keytype}_key -N ''
+			"${EROOT}"/usr/bin/ssh-keygen -t ${keytype} -f "${ED}/${KEY_DIR}/ssh_host_${keytype}_key" -N ''
 		done
 	fi
 }
