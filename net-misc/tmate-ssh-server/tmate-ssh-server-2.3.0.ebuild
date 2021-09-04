@@ -55,12 +55,12 @@ src_install(){
 
 pkg_postinst() {
 	local KEY_DIR="etc/tmate-ssh-server"
-	einfo "You need to modify certain variables for systemd or OpenRC services to work"
-	einfo "See ${EROOT}/etc/conf.d/tmate-ssh-server.confd for OpenRC users"
-	einfo "See ${EROOT}/etc/systemd/system/tmate-ssh-server.service.d/ for systemd users"
-	einfo "If you want to generate a server ssh key, use emerge --config, or alternatively,"
-	einfo "run ${EROOT}/usr/bin/ssh-keygen -t rsa -f ${EROOT}/${KEY_DIR}/ssh_host_rsa_key"
-	einfo "and ${EROOT}/usr/bin/ssh-keygen -t ed25519 -f ${EROOT}/${KEY_DIR}/ssh_host_ed25519_key"
+	elog "You need to modify certain variables for systemd or OpenRC services to work"
+	elog "See ${EROOT}/etc/conf.d/tmate-ssh-server.confd for OpenRC users"
+	elog "See ${EROOT}/etc/systemd/system/tmate-ssh-server.service.d/ for systemd users"
+	elog "If you want to generate a server ssh key, use emerge --config, or alternatively,"
+	elog "run ${EROOT}/usr/bin/ssh-keygen -t rsa -f ${EROOT}/${KEY_DIR}/ssh_host_rsa_key"
+	elog "and ${EROOT}/usr/bin/ssh-keygen -t ed25519 -f ${EROOT}/${KEY_DIR}/ssh_host_ed25519_key"
 }
 
 pkg_config() {
