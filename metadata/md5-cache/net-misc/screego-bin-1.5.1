@@ -1,0 +1,14 @@
+BDEPEND=virtual/pkgconfig
+DEFINED_PHASES=install postinst unpack
+DESCRIPTION=Screego is a screen sharing tool for developers
+EAPI=8
+HOMEPAGE=https://github.com/screego/server/blob/master/README.md
+INHERIT=systemd
+IUSE=nginx
+KEYWORDS=~amd64 ~arm64
+LICENSE=GPL-3
+RDEPEND=nginx? ( www-servers/nginx )
+SLOT=0
+SRC_URI=arm64? ( https://github.com/screego/server/releases/download/v1.5.1/screego_1.5.1_linux_arm64.tar.gz ) ppc64? ( https://github.com/screego/server/releases/download/v1.5.1/screego_1.5.1_linux_ppc64le.tar.gz ) amd64? ( https://github.com/screego/server/releases/download/v1.5.1/screego_1.5.1_linux_amd64.tar.gz ) x86? ( https://github.com/screego/server/releases/download/v1.5.1/screego_1.5.1_linux_i386.tar.gz )
+_eclasses_=toolchain-funcs	9ea1c67b6f8315fdc2568abb674519aa	multilib	97566c1a256d07b00848aa767e38a352	systemd	c846b9e02ac8293bfc9ca38a195c2a18
+_md5_=f80401db5192365bb92adf2af8509188

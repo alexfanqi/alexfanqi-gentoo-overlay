@@ -1,0 +1,12 @@
+#!/sbin/openrc-run
+# Copyright 2021 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+name="screego daemon"
+description=""
+command=/opt/screego/screego
+command_args="serve"
+
+depend() {
+	need net
+}
