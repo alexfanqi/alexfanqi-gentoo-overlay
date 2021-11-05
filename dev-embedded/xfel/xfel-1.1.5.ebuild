@@ -16,17 +16,13 @@ if [[ ${PV} == "9999" ]]; then
 	EGIT_REPO_URI="https://github.com/xboot/xfel.git"
 	inherit git-r3
 else
-	KEYWORDS="~amd64 ~x86 ~riscv"
+	KEYWORDS="~amd64 ~riscv ~x86"
 	SRC_URI="https://github.com/xboot/xfel/archive/refs/tags/v${PV}.tar.gz -> ${PF}.tar.gz"
 fi
 
 DEPEND="
 	>=dev-libs/libusb-1.0.0
 "
-
-BDEPEND="
-	virtual/pkgconfig
-	"
 src_prepare() {
 	# make it respect user CC CFLAGS etc.
 	local my_remove=(CC CXX LD AR OC OD ASFLAGS CFLAGS CXXFLAGS LDFLAGS)
@@ -35,16 +31,13 @@ src_prepare() {
 	eapply_user
 }
 
-src_configure() {
-	tc-export CC CXX LD AR OBJCOPY OBJDUMP
-}
-
 src_compile() {
+	tc-export CC CXX LD AR OBJCOPY OBJDUMP
 	emake ASFLAGS=$CFLAGS OC=$OBJCOPY OD=$OBJDUMP
 }
 
 src_install() {
 	dobin xfel
-	udev_dorules 99-xfel.rules 
-	dodoc README.md 
+	udev_dorules 99-xfel.rules
+	dodoc README.md
 }
