@@ -12,7 +12,6 @@ LICENSE="MIT"
 SLOT="0"
 
 if [[ ${PV} == "9999" ]]; then
-	KEYWORDS=""
 	EGIT_REPO_URI="https://github.com/xboot/xfel.git"
 	inherit git-r3
 else
