@@ -26,13 +26,13 @@ src_prepare() {
 	# make it respect user CC CFLAGS etc.
 	local my_remove=(CC CXX LD AR OC OD ASFLAGS CFLAGS CXXFLAGS LDFLAGS)
 	my_remove=$(printf -- "-e /^%s/d " "${my_remove[@]}")
-	sed -i -e '/^AS/s/$(CROSS)gcc/$(CC)/' $my_remove Makefile
+	sed -i -e '/^AS/s/$(CROSS)gcc/$(CC)/' $my_remove Makefile || die
 	eapply_user
 }
 
 src_compile() {
 	tc-export CC CXX LD AR OBJCOPY OBJDUMP
-	emake ASFLAGS=$CFLAGS OC=$OBJCOPY OD=$OBJDUMP
+	emake OC="${OBJCOPY}" OD="${OBJDUMP}"
 }
 
 src_install() {
