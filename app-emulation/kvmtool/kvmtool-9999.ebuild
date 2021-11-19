@@ -7,26 +7,29 @@ inherit git-r3 linux-info
 
 DESCRIPTION="A lightweight tool for hosting KVM guests"
 HOMEPAGE="https://git.kernel.org/pub/scm/linux/kernel/git/will/kvmtool.git/"
-EGIT_REPO_URI="https://github.com/kvm-riscv/kvmtool.git"
+EGIT_REPO_URI="
+	riscv? https://github.com/kvm-riscv/kvmtool.git
+	!riscv? https://git.kernel.org/pub/scm/linux/kernel/git/will/kvmtool.git
+	"
 
 LICENSE="GPL-2"
 SLOT="0"
 IUSE=""
 
-BDEPEND="sys-apps/dtc"
-RDEPEND="${BDEPEND}"
+DEPEND="riscv? ( sys-apps/dtc )"
+BDEPEND="${DEPEND}"
+RDEPEND="${DEPEND}"
 
 function ctarget() {
 	CTARGET="${ARCH}"
 	use amd64 && CTARGET='x86_64'
-	use riscv && CTARGET='riscv'
 	echo $CTARGET
 }
 
 CONFIG_CHECK="
-	VIRTIO VIRTIO_PCI
 	SERIAL_8250 SERIAL_8250_CONSOLE
-	VIRTIO VIRTIO_RING VIRTIO_PCI
+	VIRTIO VIRTIO_PCI
+	VIRTIO_RING VIRTIO_PCI
 	VIRTIO_BLK VIRTIO_NET
 	~VIRTIO_BALLOON
 	~VIRTIO_CONSOLE
