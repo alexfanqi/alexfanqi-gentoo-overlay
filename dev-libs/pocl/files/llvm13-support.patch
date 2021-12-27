@@ -1,0 +1,64 @@
+From a3d80597c3a9992ab9076461673813e4f915c4dd Mon Sep 17 00:00:00 2001
+From: Mauri Mustonen <mauri.mustonen@tuni.fi>
+Date: Thu, 11 Feb 2021 11:08:24 +0200
+Subject: [PATCH] LLVM 13 support
+
+---
+ cmake/LLVM.cmake          | 5 ++++-
+ include/_kernel.h         | 6 ++++++
+ lib/CL/pocl_llvm_build.cc | 8 +++++++-
+ 3 files changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/cmake/LLVM.cmake b/cmake/LLVM.cmake
+index 3131ddd53..fffbee3af 100644
+--- a/cmake/LLVM.cmake
++++ b/cmake/LLVM.cmake
+@@ -198,8 +198,11 @@ elseif(LLVM_VERSION MATCHES "^11[.]")
+ elseif(LLVM_VERSION MATCHES "^12[.]")
+   set(LLVM_MAJOR 12)
+   set(LLVM_12_0 1)
++elseif(LLVM_VERSION MATCHES "^13[.]")
++  set(LLVM_MAJOR 13)
++  set(LLVM_13_0 1)
+ else()
+-  message(FATAL_ERROR "LLVM version between 6.0 and 12.0 required, found: ${LLVM_VERSION}")
++  message(FATAL_ERROR "LLVM version between 6.0 and 13.0 required, found: ${LLVM_VERSION}")
+ endif()
+ 
+ #############################################################
+diff --git a/include/_kernel.h b/include/_kernel.h
+index f3ffa21b6..11f17c16f 100644
+--- a/include/_kernel.h
++++ b/include/_kernel.h
+@@ -152,6 +152,12 @@
+ 
+ # undef LLVM_12_0
+ # define LLVM_12_0
++
++#elif (__clang_major__ == 13)
++
++# undef LLVM_13_0
++# define LLVM_13_0
++
+ #else
+ 
+ #error Unsupported Clang/LLVM version.
+diff --git a/lib/CL/pocl_llvm_build.cc b/lib/CL/pocl_llvm_build.cc
+index 5c60743db..1fb838b45 100644
+--- a/lib/CL/pocl_llvm_build.cc
++++ b/lib/CL/pocl_llvm_build.cc
+@@ -419,7 +419,13 @@ int pocl_llvm_build_program(cl_program program,
+ #else
+                              clang::InputKind::OpenCL,
+ #endif
+-                             triple, po, clang::LangStandard::lang_opencl12);
++                             triple,
++#ifndef LLVM_OLDER_THAN_12_0
++                             po.Includes,
++#else
++                             po,
++#endif
++                             clang::LangStandard::lang_opencl12);
+ 
+   // LLVM 3.3 and older do not set that char is signed which is
+   // defined by the OpenCL C specs (but not by C specs).

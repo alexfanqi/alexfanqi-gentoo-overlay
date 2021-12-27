@@ -1,0 +1,82 @@
+From be7fab566ce54bc152bab1789b60b35808e666b9 Mon Sep 17 00:00:00 2001
+From: KOLANICH <kolan_n@mail.ru>
+Date: Fri, 24 Jul 2020 18:26:26 +0300
+Subject: [PATCH] Initial LLVM 12 support
+
+---
+ cmake/LLVM.cmake                    | 6 +++++-
+ include/_kernel.h                   | 5 +++++
+ include/_libclang_versions_checks.h | 3 +++
+ lib/CMakeLists.txt                  | 7 ++++++-
+ 4 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/cmake/LLVM.cmake b/cmake/LLVM.cmake
+index b41e75a98..e521b78e5 100644
+--- a/cmake/LLVM.cmake
++++ b/cmake/LLVM.cmake
+@@ -37,6 +37,7 @@ else()
+   # search for any version
+   find_program(LLVM_CONFIG
+     NAMES
++      "llvm-config-mp-12.0" "llvm-config-12" "llvm-config120"
+       "llvm-config-mp-11.0" "llvm-config-11" "llvm-config110"
+       "llvm-config-mp-10.0" "llvm-config-10" "llvm-config100"
+       "llvm-config-mp-9.0" "llvm-config-9" "llvm-config90"
+@@ -184,8 +185,11 @@ elseif(LLVM_VERSION MATCHES "^10[.]")
+ elseif(LLVM_VERSION MATCHES "^11[.]")
+   set(LLVM_MAJOR 11)
+   set(LLVM_11_0 1)
++elseif(LLVM_VERSION MATCHES "^12[.]")
++  set(LLVM_MAJOR 12)
++  set(LLVM_12_0 1)
+ else()
+-  message(FATAL_ERROR "LLVM version between 6.0 and 11.0 required, found: ${LLVM_VERSION}")
++  message(FATAL_ERROR "LLVM version between 6.0 and 12.0 required, found: ${LLVM_VERSION}")
+ endif()
+ 
+ #############################################################
+diff --git a/include/_kernel.h b/include/_kernel.h
+index 90154648a..f3ffa21b6 100644
+--- a/include/_kernel.h
++++ b/include/_kernel.h
+@@ -147,6 +147,11 @@
+ 
+ # undef LLVM_11_0
+ # define LLVM_11_0
++
++#elif (__clang_major__ == 12)
++
++# undef LLVM_12_0
++# define LLVM_12_0
+ #else
+ 
+ #error Unsupported Clang/LLVM version.
+diff --git a/include/_libclang_versions_checks.h b/include/_libclang_versions_checks.h
+index 1ba0ce4de..18c490b1f 100644
+--- a/include/_libclang_versions_checks.h
++++ b/include/_libclang_versions_checks.h
+@@ -1,3 +1,6 @@
++#if CLANG_MAJOR < 12
++#define LLVM_OLDER_THAN_12_0 1
++#endif
+ 
+ #if CLANG_MAJOR < 11
+ #define LLVM_OLDER_THAN_11_0 1
+diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
+index 9b0cbb12c..43dc2023b 100644
+--- a/lib/CMakeLists.txt
++++ b/lib/CMakeLists.txt
+@@ -31,7 +31,12 @@ cpack_add_component("lib")
+ set("CPACK_DEBIAN_LIB_PACKAGE_NAME" "libpocl2")
+ set(CPACK_DEBIAN_LIB_PACKAGE_DEPENDS "libgcc1;libc6")
+ if(ENABLE_HWLOC)
+-	list(APPEND CPACK_DEBIAN_LIB_PACKAGE_DEPENDS "libhwloc5 (>= ${Hwloc_VERSION}~)")
++	if(LLVM_VERSION_MAJOR GREATER_EQUAL 12)
++		set(HWLOC_NUMBER_PART 15)
++	else()
++		set(HWLOC_NUMBER_PART 5)
++	endif()
++	list(APPEND CPACK_DEBIAN_LIB_PACKAGE_DEPENDS "libhwloc${HWLOC_NUMBER_PART} (>= ${Hwloc_VERSION}~)")
+ endif()
+ if(OCS_AVAILABLE)
+ 	list(APPEND CPACK_DEBIAN_LIB_PACKAGE_DEPENDS "libllvm${LLVM_VERSION_MAJOR} (>= ${LLVM_VERSION_MAJOR}~);clang-${LLVM_VERSION_MAJOR} (>= ${LLVM_VERSION_MAJOR}~)")

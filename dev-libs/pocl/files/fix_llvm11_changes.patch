@@ -1,0 +1,164 @@
+From dae742fae9978c524ec849a90d0b40a9682fb172 Mon Sep 17 00:00:00 2001
+From: KOLANICH <kolan_n@mail.ru>
+Date: Mon, 22 Jun 2020 15:53:45 +0300
+Subject: [PATCH] Fixing llvm11 support due to recent changes:
+ https://github.com/llvm/llvm-project/commit/4f04db4b5439f390c48408f9b94875810e88ffc6
+ https://github.com/llvm/llvm-project/commit/a58b62b4a2b96c31b49338b262b609db746449e8
+ https://github.com/llvm/llvm-project/commit/4aae4e3f48b9156755c4cfc7ad63fe2a7029d9d7
+ .
+
+---
+ lib/llvmopencl/HandleSamplerInitialization.cc |  4 +++
+ lib/llvmopencl/HandleSamplerInitialization.h  |  1 -
+ lib/llvmopencl/Workgroup.cc                   | 35 +++++++++++++++++--
+ lib/llvmopencl/WorkitemLoops.cc               |  4 +++
+ 4 files changed, 41 insertions(+), 3 deletions(-)
+
+diff --git a/lib/llvmopencl/HandleSamplerInitialization.cc b/lib/llvmopencl/HandleSamplerInitialization.cc
+index 4cbc56179..5d65c48fa 100644
+--- a/lib/llvmopencl/HandleSamplerInitialization.cc
++++ b/lib/llvmopencl/HandleSamplerInitialization.cc
+@@ -79,7 +79,11 @@ HandleSamplerInitialization::runOnFunction(Function &F) {
+ 
+     // get the type of the return value of __translate_sampler
+     // this may not always be opencl.sampler_t, it could be a remapped type.
++#ifdef LLVM_OLDER_THAN_11_0
+     Type *type = C->getCalledValue()->getType();
++#else
++    Type *type = C->getCalledOperand()->getType();
++#endif
+     PointerType *pt = dyn_cast<PointerType>(type);
+     FunctionType *ft = dyn_cast<FunctionType>(pt->getPointerElementType());
+     Type *rettype = ft->getReturnType();
+diff --git a/lib/llvmopencl/HandleSamplerInitialization.h b/lib/llvmopencl/HandleSamplerInitialization.h
+index e8274e50d..dc7539e24 100644
+--- a/lib/llvmopencl/HandleSamplerInitialization.h
++++ b/lib/llvmopencl/HandleSamplerInitialization.h
+@@ -27,7 +27,6 @@
+ IGNORE_COMPILER_WARNING("-Wunused-parameter")
+ 
+ #include <llvm/IR/Function.h>
+-#include <llvm/PassAnalysisSupport.h>
+ #include <llvm/Pass.h>
+ 
+ POP_COMPILER_DIAGS
+diff --git a/lib/llvmopencl/Workgroup.cc b/lib/llvmopencl/Workgroup.cc
+index 357049a19..0ae2f34cf 100644
+--- a/lib/llvmopencl/Workgroup.cc
++++ b/lib/llvmopencl/Workgroup.cc
+@@ -35,7 +35,9 @@ IGNORE_COMPILER_WARNING("-Wunused-parameter")
+ 
+ #include <llvm/Analysis/ConstantFolding.h>
+ #include <llvm/IR/BasicBlock.h>
++#ifdef LLVM_OLDER_THAN_11_0
+ #include <llvm/IR/CallSite.h>
++#endif
+ #include <llvm/IR/Constants.h>
+ #include <llvm/IR/DerivedTypes.h>
+ #include <llvm/IR/IRBuilder.h>
+@@ -517,10 +519,15 @@ static void replacePrintfCalls(Value *pb, Value *pbp, Value *pbc, bool isKernel,
+         for (unsigned i = 0; i < j; ++i)
+           ops.push_back(CallInstr->getOperand(i));
+ 
+-        CallSite CS(CallInstr);
+         CallInst *NewCI = CallInst::Create(poclPrintf, ops);
+         NewCI->setCallingConv(poclPrintf->getCallingConv());
++#ifdef LLVM_OLDER_THAN_11_0
++        CallSite CS(CallInstr);
+         NewCI->setTailCall(CS.isTailCall());
++#else
++        auto *CB = dyn_cast<CallBase>(CallInstr);
++        NewCI->setTailCall(CB->isTailCall());
++#endif
+ 
+         replaceCIMap.insert(
+             std::pair<CallInst *, CallInst *>(CallInstr, NewCI));
+@@ -719,7 +726,11 @@ Workgroup::createWrapper(Function *F, FunctionMapping &printfCache) {
+ 
+   // needed for printf
+   InlineFunctionInfo IFI;
++#ifdef LLVM_OLDER_THAN_11_0
+   InlineFunction(c, IFI);
++#else
++  InlineFunction(*c, IFI);
++#endif
+ 
+   if (currentPoclDevice->device_side_printf) {
+     Function *poclPrintf = M->getFunction("__pocl_printf");
+@@ -989,7 +1000,11 @@ Workgroup::createDefaultWorkgroupLauncher(llvm::Function *F) {
+             new llvm::AllocaInst(ArgElementType, ParamType->getAddressSpace(),
+                                  ConstantInt::get(IntegerType::get(*C, 32), 1),
+ #ifndef LLVM_OLDER_THAN_10_0
++#ifndef LLVM_OLDER_THAN_11_0
++                                 llvm::Align(
++#else
+                                  llvm::MaybeAlign(
++#endif
+ #endif
+                                      MAX_EXTENDED_ALIGNMENT
+ #ifndef LLVM_OLDER_THAN_10_0
+@@ -1012,7 +1027,11 @@ Workgroup::createDefaultWorkgroupLauncher(llvm::Function *F) {
+         Arg = new llvm::AllocaInst(ArgElementType, ParamType->getAddressSpace(),
+                                    ElementCount,
+ #ifndef LLVM_OLDER_THAN_10_0
++#ifndef LLVM_OLDER_THAN_11_0
++                                   llvm::Align(
++#else
+                                    llvm::MaybeAlign(
++#endif
+ #endif
+                                        MAX_EXTENDED_ALIGNMENT
+ #ifndef LLVM_OLDER_THAN_10_0
+@@ -1213,7 +1232,11 @@ Workgroup::createArgBufferWorkgroupLauncher(Function *Func,
+             unwrap(ArgElementType), LLVMGetPointerAddressSpace(ParamType),
+             unwrap(LLVMConstInt(Int32Type, 1, 0)),
+ #ifndef LLVM_OLDER_THAN_10_0
++#ifndef LLVM_OLDER_THAN_11_0
++            llvm::Align(
++#else
+             llvm::MaybeAlign(
++#endif
+ #endif
+                 MAX_EXTENDED_ALIGNMENT
+ #ifndef LLVM_OLDER_THAN_10_0
+@@ -1248,7 +1271,11 @@ Workgroup::createArgBufferWorkgroupLauncher(Function *Func,
+             unwrap(LLVMGetElementType(ParamType)),
+             LLVMGetPointerAddressSpace(ParamType), unwrap(ElementCount),
+ #ifndef LLVM_OLDER_THAN_10_0
++#ifndef LLVM_OLDER_THAN_11_0
++            llvm::Align(
++#else
+             llvm::MaybeAlign(
++#endif
+ #endif
+                 MAX_EXTENDED_ALIGNMENT
+ #ifndef LLVM_OLDER_THAN_10_0
+@@ -1362,7 +1389,11 @@ Workgroup::createGridLauncher(Function *KernFunc, Function *WGFunc,
+   LLVMBuildRetVoid(Builder);
+ 
+   InlineFunctionInfo IFI;
+-  InlineFunction(dyn_cast<CallInst>(llvm::unwrap(Call)), IFI);
++#ifndef LLVM_OLDER_THAN_11_0
++      InlineFunction(*dyn_cast<CallInst>(llvm::unwrap(Call)), IFI);
++#else
++      InlineFunction(dyn_cast<CallInst>(llvm::unwrap(Call)), IFI);
++#endif
+ }
+ 
+ /**
+diff --git a/lib/llvmopencl/WorkitemLoops.cc b/lib/llvmopencl/WorkitemLoops.cc
+index 69daa3faa..64294111e 100644
+--- a/lib/llvmopencl/WorkitemLoops.cc
++++ b/lib/llvmopencl/WorkitemLoops.cc
+@@ -990,7 +990,11 @@ WorkitemLoops::GetContextArray(llvm::Instruction *instruction,
+      size. */
+     Alloca->setAlignment(
+ #ifndef LLVM_OLDER_THAN_10_0
++#ifndef LLVM_OLDER_THAN_11_0
++        llvm::Align(
++#else
+         llvm::MaybeAlign(
++#endif
+ #endif
+             CONTEXT_ARRAY_ALIGN
+ #ifndef LLVM_OLDER_THAN_10_0

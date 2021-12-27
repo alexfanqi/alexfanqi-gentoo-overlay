@@ -7,21 +7,21 @@ DOCS_AUTODOC=0
 DOCS_BUILDER="sphinx"
 DOCS_DIR="doc/sphinx/source"
 PYTHON_COMPAT=( python3_{8..10} pypy3 )
+LLVM_MAX_SLOT=13
 
-inherit cmake llvm python-any-r1 docs
-
-LLVM_MAX_SLOT=12
+inherit cmake llvm python-any-r1 docs git-r3
 
 DESCRIPTION="Portable Computing Language (an implementation of OpenCL)"
 HOMEPAGE="http://portablecl.org https://github.com/pocl/pocl"
-SRC_URI="https://github.com/pocl/pocl/archive/v${PV}.tar.gz -> ${P}.tar.gz"
+
+EGIT_REPO_URI="https://github.com/vortexgpgpu/pocl.git"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~amd64"
-IUSE="accel cl20 +conformance cuda debug examples float-conversion hardening +hwloc memmanager test" #hsa tce
-
-RESTRICT="!test? ( test ) mirror"
+# TODO: hsa tce
+IUSE="accel cl20 +conformance cuda debug examples float-conversion hardening +hwloc memmanager test"
+# Tests not yet passing, fragile in Portage environment(?)
+RESTRICT="!test? ( test ) test"
 
 # TODO: add dependencies for cuda
 # Note: No := on LLVM because it pulls in Clang
@@ -46,6 +46,14 @@ BDEPEND="${CLANG_DEPS}
 
 PATCHES=(
 	"${FILESDIR}/vendor_opencl_libs_location.patch"
+	"${FILESDIR}/assert_fail_in_cpu_setup_vector_widths.patch"
+	"${FILESDIR}/link_against_libclang-cpp.patch"
+	"${FILESDIR}/llvm11-support.patch"
+	"${FILESDIR}/fix_llvm11_changes.patch"
+	"${FILESDIR}/llvm12-support.patch"
+	"${FILESDIR}/llvm13-support.patch"
+	"${FILESDIR}/fix_invalid_werror.patch"
+	"${FILESDIR}/workaround_undefined_reserve_id_t_in_llvm13.patch"
 )
 
 python_check_deps() {
@@ -65,6 +73,15 @@ pkg_setup() {
 	use doc && python-any-r1_pkg_setup
 
 	llvm_pkg_setup
+}
+
+src_unpack() {
+	if use riscv ; then
+		EGIT_REPO_URI="https://github.com/vortexgpgpu/pocl.git"
+	else
+		EGIT_REPO_URI="https://github.com/pocl/pocl.git"
+	fi
+	git-r3_src_unpack
 }
 
 src_configure() {
@@ -87,7 +104,15 @@ src_configure() {
 		-DHARDENING_ENABLE=$(usex hardening)
 		-DPOCL_DEBUG_MESSAGES=$(usex debug)
 		-DUSE_POCL_MEMMANAGER=$(usex memmanager)
+		-DENABLE_TESTS=$(usex test)
 	)
+
+	if use riscv ; then
+		mycmakeargs+=(
+			-DLLC_HOST_CPU=sifive-u74
+			#-DDHOST_DEVICE_BUILD_HASH=riscv64-unknown-linux-gnu-rv64gc
+		)
+	fi
 
 	cmake_src_configure
 }
@@ -99,7 +124,12 @@ src_compile() {
 
 src_test() {
 	export POCL_BUILDING=1
+	export POCL_DEVICES=basic
 	export CTEST_OUTPUT_ON_FAILURE=1
+	export TEST_VERBOSE=1
+
+	# Referenced https://github.com/pocl/pocl/blob/master/.drone.yml
+	# But couldn't seem to get tests working yet
 	cmake_src_test
 }
 
