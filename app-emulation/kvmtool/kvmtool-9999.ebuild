@@ -7,10 +7,6 @@ inherit git-r3 linux-info
 
 DESCRIPTION="A lightweight tool for hosting KVM guests"
 HOMEPAGE="https://git.kernel.org/pub/scm/linux/kernel/git/will/kvmtool.git/"
-EGIT_REPO_URI="
-	riscv? https://github.com/kvm-riscv/kvmtool.git
-	!riscv? https://git.kernel.org/pub/scm/linux/kernel/git/will/kvmtool.git
-	"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -47,6 +43,15 @@ pkg_pretend() {
 			check_extra_config
 		fi
 	fi
+}
+
+src_unpack() {
+	if use riscv ; then
+		EGIT_REPO_URI="https://github.com/kvm-riscv/kvmtool.git"
+	else
+		EGIT_REPO_URI="https://git.kernel.org/pub/scm/linux/kernel/git/will/kvmtool.git"
+	fi
+	git-r3_src_unpack
 }
 
 src_prepare() {
