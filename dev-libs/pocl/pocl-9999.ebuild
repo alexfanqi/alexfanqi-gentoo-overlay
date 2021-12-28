@@ -110,6 +110,8 @@ src_configure() {
 	if use riscv ; then
 		mycmakeargs+=(
 			-DLLC_HOST_CPU=sifive-u74
+			-DEXTRA_HOST_CLANG_FLAGS="${CFLAGS}"
+			-DEXTRA_HOST_LLC_FLAGS="-target-abi lp64d -mattr=+d"
 			#-DDHOST_DEVICE_BUILD_HASH=riscv64-unknown-linux-gnu-rv64gc
 		)
 	fi
